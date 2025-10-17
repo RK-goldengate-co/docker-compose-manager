@@ -1,118 +1,154 @@
 #!/usr/bin/env python3
 """
-Docker Compose Manager - Main Entry Point
-
-A CLI tool for managing Docker Compose projects with multi-environment support,
-service monitoring, and automated deployment workflows.
+Docker Compose Manager - Python Implementation
+A tool to manage Docker Compose services
 """
 
+import os
 import sys
-import argparse
-from pathlib import Path
+import subprocess
+import yaml
+from typing import Optional, Dict, List
 
 
 class DockerComposeManager:
-    """Main class for Docker Compose Manager operations."""
+    """Docker Compose Manager for managing services."""
     
-    def __init__(self, config_path: str = "dcm.config.yml"):
-        self.config_path = Path(config_path)
-        self.environments = {}
+    def __init__(self, config_path: str = 'dcm.config.yml'):
+        self.config_path = config_path
+        self.config = self.load_config()
+    
+    def load_config(self) -> Dict:
+        """Load configuration from YAML file."""
+        if os.path.exists(self.config_path):
+            try:
+                with open(self.config_path, 'r') as f:
+                    return yaml.safe_load(f) or {}
+            except Exception as e:
+                print(f"Error loading config: {e}")
         
-    def init_project(self):
-        """Initialize a new Docker Compose Manager project."""
-        print("\n🚀 Initializing Docker Compose Manager project...")
-        print("Creating configuration files...")
-        # TODO: Implement project initialization
-        print("✅ Project initialized successfully!\n")
-        
-    def start_services(self, environment: str = "dev"):
-        """Start Docker Compose services for specified environment."""
-        print(f"\n▶️  Starting services in '{environment}' environment...")
-        # TODO: Implement service startup
-        print("✅ Services started successfully!\n")
-        
-    def stop_services(self, environment: str = "dev"):
-        """Stop Docker Compose services for specified environment."""
-        print(f"\n⏹️  Stopping services in '{environment}' environment...")
-        # TODO: Implement service shutdown
-        print("✅ Services stopped successfully!\n")
-        
-    def show_status(self):
-        """Display status of all Docker Compose services."""
-        print("\n📊 Service Status:")
-        print("-" * 50)
-        # TODO: Implement status monitoring
-        print("No services running\n")
-        
-    def deploy(self, environment: str):
-        """Deploy services to specified environment."""
-        print(f"\n🚀 Deploying to '{environment}' environment...")
-        # TODO: Implement deployment workflow
-        print("✅ Deployment completed successfully!\n")
-
-
-def create_parser():
-    """Create and configure argument parser."""
-    parser = argparse.ArgumentParser(
-        description="Docker Compose Manager - Manage your Docker Compose projects with ease",
-        formatter_class=argparse.RawDescriptionHelpFormatter
-    )
+        print("Config file not found, using defaults")
+        return {'services': [], 'compose_file': 'docker-compose.yml'}
     
-    subparsers = parser.add_subparsers(dest="command", help="Available commands")
+    def execute_command(self, command: str) -> Optional[str]:
+        """Execute a shell command and return output."""
+        try:
+            print(f"Executing: {command}")
+            result = subprocess.run(
+                command,
+                shell=True,
+                capture_output=True,
+                text=True,
+                check=True
+            )
+            output = result.stdout
+            if output:
+                print(output)
+            return output
+        except subprocess.CalledProcessError as e:
+            print(f"Error: {e}")
+            if e.stderr:
+                print(e.stderr)
+            return None
     
-    # init command
-    subparsers.add_parser("init", help="Initialize a new project")
+    def start(self, service_name: Optional[str] = None) -> Optional[str]:
+        """Start Docker Compose services."""
+        cmd = f"docker-compose up -d {service_name}" if service_name else "docker-compose up -d"
+        print("Starting services...")
+        return self.execute_command(cmd)
     
-    # up command
-    up_parser = subparsers.add_parser("up", help="Start services")
-    up_parser.add_argument("--env", default="dev", help="Environment to use (default: dev)")
+    def stop(self, service_name: Optional[str] = None) -> Optional[str]:
+        """Stop Docker Compose services."""
+        cmd = f"docker-compose stop {service_name}" if service_name else "docker-compose stop"
+        print("Stopping services...")
+        return self.execute_command(cmd)
     
-    # down command
-    down_parser = subparsers.add_parser("down", help="Stop services")
-    down_parser.add_argument("--env", default="dev", help="Environment to use (default: dev)")
+    def restart(self, service_name: Optional[str] = None) -> Optional[str]:
+        """Restart Docker Compose services."""
+        cmd = f"docker-compose restart {service_name}" if service_name else "docker-compose restart"
+        print("Restarting services...")
+        return self.execute_command(cmd)
     
-    # status command
-    subparsers.add_parser("status", help="Show service status")
+    def status(self) -> Optional[str]:
+        """Check status of Docker Compose services."""
+        print("Checking service status...")
+        return self.execute_command("docker-compose ps")
     
-    # deploy command
-    deploy_parser = subparsers.add_parser("deploy", help="Deploy to environment")
-    deploy_parser.add_argument("--env", required=True, help="Target environment")
+    def logs(self, service_name: Optional[str] = None, follow: bool = False) -> Optional[str]:
+        """View logs from Docker Compose services."""
+        follow_flag = "-f" if follow else ""
+        cmd = f"docker-compose logs {follow_flag} {service_name}" if service_name else f"docker-compose logs {follow_flag}"
+        print("Fetching logs...")
+        return self.execute_command(cmd)
     
-    return parser
+    def remove(self, service_name: Optional[str] = None) -> Optional[str]:
+        """Remove Docker Compose services."""
+        cmd = f"docker-compose rm -f {service_name}" if service_name else "docker-compose rm -f"
+        print("Removing services...")
+        return self.execute_command(cmd)
+    
+    def build(self, service_name: Optional[str] = None) -> Optional[str]:
+        """Build Docker Compose services."""
+        cmd = f"docker-compose build {service_name}" if service_name else "docker-compose build"
+        print("Building services...")
+        return self.execute_command(cmd)
+    
+    def pull(self, service_name: Optional[str] = None) -> Optional[str]:
+        """Pull Docker images."""
+        cmd = f"docker-compose pull {service_name}" if service_name else "docker-compose pull"
+        print("Pulling images...")
+        return self.execute_command(cmd)
+    
+    def display_menu(self):
+        """Display interactive menu."""
+        print("\n=== Docker Compose Manager (Python) ===")
+        print("1. Start services")
+        print("2. Stop services")
+        print("3. Restart services")
+        print("4. Check status")
+        print("5. View logs")
+        print("6. Remove services")
+        print("7. Build services")
+        print("8. Pull images")
+        print("0. Exit")
+        print("========================================\n")
 
 
 def main():
-    """Main entry point for the application."""
-    parser = create_parser()
-    args = parser.parse_args()
+    """Main entry point."""
+    manager = DockerComposeManager()
     
-    if not args.command:
-        parser.print_help()
-        sys.exit(1)
+    print("Docker Compose Manager - Python Edition")
+    print(f"Config loaded from: {manager.config_path}")
     
-    dcm = DockerComposeManager()
-    
-    try:
-        if args.command == "init":
-            dcm.init_project()
-        elif args.command == "up":
-            dcm.start_services(args.env)
-        elif args.command == "down":
-            dcm.stop_services(args.env)
-        elif args.command == "status":
-            dcm.show_status()
-        elif args.command == "deploy":
-            dcm.deploy(args.env)
+    # Check for command line arguments
+    if len(sys.argv) > 1:
+        command = sys.argv[1].lower()
+        service = sys.argv[2] if len(sys.argv) > 2 else None
+        
+        if command == 'start':
+            manager.start(service)
+        elif command == 'stop':
+            manager.stop(service)
+        elif command == 'restart':
+            manager.restart(service)
+        elif command == 'status':
+            manager.status()
+        elif command == 'logs':
+            manager.logs(service)
+        elif command == 'remove':
+            manager.remove(service)
+        elif command == 'build':
+            manager.build(service)
+        elif command == 'pull':
+            manager.pull(service)
         else:
-            parser.print_help()
-            sys.exit(1)
-    except KeyboardInterrupt:
-        print("\n\n⚠️  Operation cancelled by user")
-        sys.exit(130)
-    except Exception as e:
-        print(f"\n❌ Error: {e}")
-        sys.exit(1)
+            print("Unknown command. Available: start, stop, restart, status, logs, remove, build, pull")
+    else:
+        manager.display_menu()
+        print("Usage: python3 main.py <command> [service]")
+        print("Example: python3 main.py start web")
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     main()
