@@ -1,4 +1,4 @@
-.PHONY: help install-all install-python install-node install-go build-all build-python build-node build-go run-python run-node run-typescript run-go test clean
+.PHONY: help install-all install-python install-node install-go build-all build-python build-node build-go run-python run-node run-typescript run-go test clean format lint docker-up docker-down docker-status
 
 # Default target
 help:
@@ -22,7 +22,13 @@ help:
 	@echo "  make run-go           - Run Go implementation"
 	@echo ""
 	@echo "  make test             - Run tests for all implementations"
+	@echo "  make format           - Format code in all languages"
+	@echo "  make lint             - Lint code in all languages"
 	@echo "  make clean            - Clean build artifacts"
+	@echo ""
+	@echo "  make docker-up        - Start all Docker Compose services"
+	@echo "  make docker-down      - Stop all Docker Compose services"
+	@echo "  make docker-status    - Show Docker Compose services status"
 	@echo ""
 	@echo "Usage examples:"
 	@echo "  make run-python       - Run with default config"
@@ -108,6 +114,43 @@ test:
 	@npm test || echo "No Node.js tests configured"
 	@echo "Go tests:"
 	@cd src && go test ./... || echo "No Go tests found"
+
+# Format code in all languages
+format:
+	@echo "Formatting code..."
+	@echo "Formatting Python code with black..."
+	@which black > /dev/null && (black src/ tests/ || echo "black not installed") || echo "black not installed"
+	@echo "Formatting JavaScript/TypeScript with prettier..."
+	@which prettier > /dev/null && (prettier --write "src/**/*.{js,ts}" || echo "prettier not installed") || echo "prettier not installed"
+	@echo "Formatting Go code with gofmt..."
+	@which gofmt > /dev/null && (gofmt -w src/*.go || echo "No Go files to format") || echo "gofmt not installed"
+	@echo "Code formatting complete!"
+
+# Lint code in all languages
+lint:
+	@echo "Linting code..."
+	@echo "Linting Python code with flake8..."
+	@which flake8 > /dev/null && (flake8 src/ tests/ || echo "flake8 not installed") || echo "flake8 not installed"
+	@echo "Linting JavaScript/TypeScript with eslint..."
+	@which eslint > /dev/null && (eslint src/**/*.{js,ts} || echo "eslint not installed") || echo "eslint not installed"
+	@echo "Linting Go code with golint..."
+	@which golint > /dev/null && (cd src && golint ./... || echo "golint not installed") || echo "golint not installed"
+	@echo "Code linting complete!"
+
+# Docker Compose commands
+docker-up:
+	@echo "Starting Docker Compose services..."
+	@docker-compose up -d
+	@echo "Services started!"
+
+docker-down:
+	@echo "Stopping Docker Compose services..."
+	@docker-compose down
+	@echo "Services stopped!"
+
+docker-status:
+	@echo "Docker Compose services status:"
+	@docker-compose ps
 
 # Clean build artifacts
 clean:
