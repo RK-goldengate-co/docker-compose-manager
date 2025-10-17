@@ -13,6 +13,27 @@ Docker Compose Manager is implemented in **four programming languages**, allowin
 
 All implementations provide the same functionality and can be used interchangeably.
 
+## ⚡ Quick Start
+
+Get started with Docker Compose Manager in just 3 steps:
+
+```bash
+# 1. Clone the repository
+git clone https://github.com/RK-goldengate-co/docker-compose-manager.git
+cd docker-compose-manager
+
+# 2. Choose your preferred language and install dependencies
+# Python:
+pip install -r requirements.txt
+# JavaScript/TypeScript:
+npm install
+# Go:
+go mod download
+
+# 3. Run your first command
+make status  # Check status of all services
+```
+
 ## ✨ Features
 
 - 🚀 **Multi-Environment Support**: Easily switch between development, staging, and production configurations
@@ -54,307 +75,128 @@ cd docker-compose-manager
 
 ### Install Dependencies
 
-Use the Makefile to install dependencies for all languages:
-
-```bash
-# Install all dependencies
-make install-all
-
-# Or install for specific languages
-make install-python
-make install-node
-make install-go
-```
-
-#### Manual Installation
-
-**Python:**
-```bash
-pip3 install -r requirements.txt
-```
-
-**Node.js:**
-```bash
-npm install js-yaml
-```
-
-**Go:**
-```bash
-cd src && go get gopkg.in/yaml.v2
-```
-
-## 🎯 Quick Start
-
-### Using Makefile (Recommended)
-
-The Makefile provides convenient shortcuts for running the application:
-
-```bash
-# Display help menu
-make help
-
-# Run with Python
-make run-python
-
-# Run with Node.js
-make run-node
-
-# Run with TypeScript
-make run-typescript
-
-# Run with Go (builds binary first)
-make run-go
-
-# Quick status check
-make quick-python
-make quick-node
-make quick-typescript
-make quick-go
-```
-
-### Running Directly
+Choose one based on your preferred language:
 
 #### Python
 ```bash
-# Display menu
-python3 src/main.py
-
-# Start all services
-python3 src/main.py start
-
-# Start specific service
-python3 src/main.py start web
-
-# Check status
-python3 src/main.py status
-
-# View logs
-python3 src/main.py logs
-
-# Stop services
-python3 src/main.py stop
+pip install -r requirements.txt
 ```
 
 #### JavaScript
 ```bash
-# Display menu
-node src/index.js
-
-# Start all services
-node src/index.js start
-
-# Start specific service
-node src/index.js start web
-
-# Check status
-node src/index.js status
-
-# View logs
-node src/index.js logs
-
-# Stop services
-node src/index.js stop
+npm install
 ```
 
 #### TypeScript
 ```bash
-# Install ts-node if not already installed
-npm install -g ts-node @types/node
-
-# Display menu
-ts-node src/index.ts
-
-# Start all services
-ts-node src/index.ts start
-
-# Start specific service
-ts-node src/index.ts start web
-
-# Check status
-ts-node src/index.ts status
-
-# View logs
-ts-node src/index.ts logs
-
-# Stop services
-ts-node src/index.ts stop
+npm install
+npm run build
 ```
 
 #### Go
 ```bash
-# Build binary
-make build-go
-
-# Run the binary
-./build/dcm
-
-# Or run directly without building
-cd src && go run main.go
-
-# Start all services
-cd src && go run main.go start
-
-# Start specific service
-cd src && go run main.go start web
-
-# Check status
-cd src && go run main.go status
-
-# View logs
-cd src && go run main.go logs
-
-# Stop services
-cd src && go run main.go stop
+go mod download
 ```
 
-## 📖 Usage
+### Configuration
 
-### Available Commands
-
-All implementations support the following commands:
-
-- `deploy [strategy]` - Deploy services with automated rollback on failure
-- `backup [name]` - Create backup before deployment
-- `rollback <backup_path>` - Rollback to previous deployment state
-- `monitor [duration]` - Monitor services continuously
-- `health <service>` - Check health status of specific service
-- `status-detailed` - Get detailed status in JSON format
-
-### Examples
-
-```bash
-# Start all services
-python3 src/main.py start
-
-# Start only the web service
-node src/index.js start web
-
-# Check status of all services
-ts-node src/index.ts status
-
-# View logs from database service
-go run src/main.go logs database
-
-# Restart all services
-python3 src/main.py restart
-
-# Build services
-node src/index.js build
-
-# Pull latest images
-ts-node src/index.ts pull
-
-# Deploy services with default strategy
-python3 src/main.py deploy
-
-# Deploy with specific strategy
-node src/index.js deploy rolling
-
-# Monitor services for 5 minutes
-cd src && go run main.go monitor 300
-
-# Check health of web service
-python3 src/main.py health web
-
-# Create backup before deployment
-python3 src/main.py backup pre-production
-
-# Rollback to previous deployment
-python3 src/main.py rollback ./backups/backup_20231201_120000
-```
-
-## ⚙️ Configuration
-
-Create a `dcm.config.yml` file in your project root:
-
-```yaml
-services:
-  - web
-  - database
-  - cache
-  - worker
-
-compose_file: docker-compose.yml
-
-environments:
-  dev:
-    compose_file: docker-compose.dev.yml
-  staging:
-    compose_file: docker-compose.staging.yml
-  prod:
-    compose_file: docker-compose.prod.yml
-```
-
-You can also use the example configuration:
+Copy the example configuration file:
 
 ```bash
 cp dcm.config.yml.example dcm.config.yml
 ```
 
-## 🏗️ Building
+Edit `dcm.config.yml` to match your environment settings.
 
-### Build All Implementations
+## 📖 Usage
 
-```bash
-make build-all
-```
+### Using the Makefile (Recommended)
 
-### Build Individual Implementations
+The easiest way to interact with Docker Compose Manager:
 
 ```bash
-# Build Python package
-make build-python
+# Start all services
+make up
 
-# Build Node.js/TypeScript
-make build-node
+# Stop all services
+make down
 
-# Build Go binary
-make build-go
+# View service status
+make status
+
+# View logs
+make logs
+
+# Deploy to production
+make deploy ENV=production
 ```
 
-The Go binary will be created in the `build/` directory and can be used standalone:
+### Direct Command Execution
 
+You can also run the tools directly:
+
+#### Python
 ```bash
-./build/dcm start
-./build/dcm status
-./build/dcm logs
+python src/main.py --help
+python src/main.py start --env development
 ```
 
-## 🧪 Testing
-
+#### JavaScript
 ```bash
-# Run all tests
-make test
-
-# Test individual implementations
-python3 -m pytest tests/
-npm test
-cd src && go test ./...
+node src/index.js --help
+node src/index.js start --env development
 ```
 
-## 🧹 Cleaning
-
-Remove build artifacts and temporary files:
-
+#### TypeScript
 ```bash
-make clean
+ts-node src/index.ts --help
+ts-node src/index.ts start --env development
 ```
 
-## 📦 Project Structure
+#### Go
+```bash
+go run src/main.go --help
+go run src/main.go start --env development
+```
+
+## 🔧 Configuration
+
+The `dcm.config.yml` file controls all aspects of Docker Compose Manager:
+
+```yaml
+environments:
+  development:
+    compose_file: docker-compose.dev.yml
+    health_check_interval: 30
+  
+  staging:
+    compose_file: docker-compose.staging.yml
+    health_check_interval: 60
+  
+  production:
+    compose_file: docker-compose.prod.yml
+    health_check_interval: 120
+    enable_monitoring: true
+```
+
+## 📁 Project Structure
 
 ```
 docker-compose-manager/
 ├── src/
-│   ├── main.py          # Python implementation
-│   ├── index.js         # JavaScript implementation
-│   ├── index.ts         # TypeScript implementation
-│   └── main.go          # Go implementation
-├── Makefile             # Build and run scripts
-├── README.md            # This file
-├── requirements.txt     # Python dependencies
-├── setup.py             # Python package setup
+│   ├── main.py         # Python implementation
+│   ├── index.js        # JavaScript implementation
+│   ├── index.ts        # TypeScript implementation
+│   └── main.go         # Go implementation
+├── docs/               # Documentation
+├── examples/           # Example configurations
+├── tests/              # Test suites
 ├── dcm.config.yml.example  # Example configuration
-├── LICENSE              # License file
+├── Makefile            # Convenient command shortcuts
+├── package.json        # Node.js dependencies
+├── requirements.txt    # Python dependencies
+├── setup.py            # Python package setup
+├── tsconfig.json       # TypeScript configuration
 └── .gitignore          # Git ignore file
 ```
 
