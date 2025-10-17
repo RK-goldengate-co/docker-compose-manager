@@ -1,0 +1,183 @@
+# Docker Compose configuration for a microservices architecture
+# This example demonstrates a typical multi-service setup
+
+version: '3.8'
+
+services:
+  # API Gateway
+  gateway:
+    image: nginx:alpine
+    container_name: api-gateway
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./config/nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - user-service
+      - product-service
+      - order-service
+    networks:
+      - microservices-network
+    restart: unless-stopped
+
+  # User Service
+  user-service:
+    image: node:18-alpine
+    container_name: user-service
+    working_dir: /app
+    volumes:
+      - ./services/user:/app
+    environment:
+      - NODE_ENV=production
+      - DB_HOST=user-db
+      - DB_PORT=5432
+      - DB_NAME=users
+      - REDIS_HOST=cache
+    ports:
+      - "3001:3000"
+    depends_on:
+      - user-db
+      - cache
+    networks:
+      - microservices-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Product Service
+  product-service:
+    image: python:3.11-slim
+    container_name: product-service
+    working_dir: /app
+    volumes:
+      - ./services/product:/app
+    environment:
+      - FLASK_ENV=production
+      - DB_HOST=product-db
+      - DB_PORT=27017
+      - DB_NAME=products
+    ports:
+      - "3002:5000"
+    depends_on:
+      - product-db
+    networks:
+      - microservices-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Order Service
+  order-service:
+    image: openjdk:17-jdk-slim
+    container_name: order-service
+    working_dir: /app
+    volumes:
+      - ./services/order:/app
+    environment:
+      - SPRING_PROFILES_ACTIVE=production
+      - DB_HOST=order-db
+      - DB_PORT=3306
+      - DB_NAME=orders
+    ports:
+      - "3003:8080"
+    depends_on:
+      - order-db
+      - message-queue
+    networks:
+      - microservices-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:8080/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # User Database (PostgreSQL)
+  user-db:
+    image: postgres:15-alpine
+    container_name: user-database
+    environment:
+      - POSTGRES_DB=users
+      - POSTGRES_USER=userservice
+      - POSTGRES_PASSWORD=secure_password_123
+    volumes:
+      - user-db-data:/var/lib/postgresql/data
+    networks:
+      - microservices-network
+    restart: unless-stopped
+
+  # Product Database (MongoDB)
+  product-db:
+    image: mongo:6
+    container_name: product-database
+    environment:
+      - MONGO_INITDB_DATABASE=products
+      - MONGO_INITDB_ROOT_USERNAME=productservice
+      - MONGO_INITDB_ROOT_PASSWORD=secure_password_456
+    volumes:
+      - product-db-data:/data/db
+    networks:
+      - microservices-network
+    restart: unless-stopped
+
+  # Order Database (MySQL)
+  order-db:
+    image: mysql:8
+    container_name: order-database
+    environment:
+      - MYSQL_DATABASE=orders
+      - MYSQL_USER=orderservice
+      - MYSQL_PASSWORD=secure_password_789
+      - MYSQL_ROOT_PASSWORD=root_password_789
+    volumes:
+      - order-db-data:/var/lib/mysql
+    networks:
+      - microservices-network
+    restart: unless-stopped
+
+  # Redis Cache
+  cache:
+    image: redis:7-alpine
+    container_name: redis-cache
+    ports:
+      - "6379:6379"
+    volumes:
+      - cache-data:/data
+    networks:
+      - microservices-network
+    restart: unless-stopped
+    command: redis-server --appendonly yes
+
+  # Message Queue (RabbitMQ)
+  message-queue:
+    image: rabbitmq:3-management-alpine
+    container_name: rabbitmq
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    environment:
+      - RABBITMQ_DEFAULT_USER=admin
+      - RABBITMQ_DEFAULT_PASS=secure_mq_password
+    volumes:
+      - mq-data:/var/lib/rabbitmq
+    networks:
+      - microservices-network
+    restart: unless-stopped
+
+networks:
+  microservices-network:
+    driver: bridge
+
+volumes:
+  user-db-data:
+  product-db-data:
+  order-db-data:
+  cache-data:
+  mq-data:
