@@ -2,147 +2,249 @@
 
 /**
  * Docker Compose Manager - JavaScript/Node.js Implementation
- * A tool to manage Docker Compose services
+ * Main entry point using modular architecture.
  */
 
-const { execSync } = require('child_process');
-const fs = require('fs');
-const path = require('path');
-const yaml = require('js-yaml');
-
-class DockerComposeManager {
-  constructor(configPath = 'dcm.config.yml') {
-    this.configPath = configPath;
-    this.config = this.loadConfig();
-  }
-
-  loadConfig() {
-    try {
-      if (fs.existsSync(this.configPath)) {
-        const fileContents = fs.readFileSync(this.configPath, 'utf8');
-        return yaml.load(fileContents);
-      }
-    } catch (e) {
-      console.log('Config file not found, using defaults');
-    }
-    return { services: [], compose_file: 'docker-compose.yml' };
-  }
-
-  executeCommand(command) {
-    try {
-      console.log(`Executing: ${command}`);
-      const output = execSync(command, { encoding: 'utf8' });
-      console.log(output);
-      return output;
-    } catch (error) {
-      console.error(`Error: ${error.message}`);
-      return null;
-    }
-  }
-
-  start(serviceName = null) {
-    const cmd = serviceName 
-      ? `docker-compose up -d ${serviceName}`
-      : 'docker-compose up -d';
-    console.log('Starting services...');
-    return this.executeCommand(cmd);
-  }
-
-  stop(serviceName = null) {
-    const cmd = serviceName 
-      ? `docker-compose stop ${serviceName}`
-      : 'docker-compose stop';
-    console.log('Stopping services...');
-    return this.executeCommand(cmd);
-  }
-
-  restart(serviceName = null) {
-    const cmd = serviceName 
-      ? `docker-compose restart ${serviceName}`
-      : 'docker-compose restart';
-    console.log('Restarting services...');
-    return this.executeCommand(cmd);
-  }
-
-  status() {
-    console.log('Checking service status...');
-    return this.executeCommand('docker-compose ps');
-  }
-
-  logs(serviceName = null, follow = false) {
-    const followFlag = follow ? '-f' : '';
-    const cmd = serviceName 
-      ? `docker-compose logs ${followFlag} ${serviceName}`
-      : `docker-compose logs ${followFlag}`;
-    console.log('Fetching logs...');
-    return this.executeCommand(cmd);
-  }
-
-  remove(serviceName = null) {
-    const cmd = serviceName 
-      ? `docker-compose rm -f ${serviceName}`
-      : 'docker-compose rm -f';
-    console.log('Removing services...');
-    return this.executeCommand(cmd);
-  }
-
-  displayMenu() {
-    console.log('\n=== Docker Compose Manager (JavaScript) ===');
-    console.log('1. Start services');
-    console.log('2. Stop services');
-    console.log('3. Restart services');
-    console.log('4. Check status');
-    console.log('5. View logs');
-    console.log('6. Remove services');
-    console.log('0. Exit');
-    console.log('==========================================\n');
-  }
-}
+const DockerComposeManager = require('./implementations/javascript/manager');
+const {
+  DockerComposeError,
+  EnvironmentError
+} = require('./implementations/javascript/exceptions');
 
 function main() {
-  const manager = new DockerComposeManager();
-  
-  console.log('Docker Compose Manager - JavaScript Edition');
-  console.log('Config loaded from:', manager.configPath);
-  
-  // Check for command line arguments
-  const args = process.argv.slice(2);
-  
-  if (args.length > 0) {
-    const command = args[0];
-    const service = args[1] || null;
-    
-    switch(command) {
-      case 'start':
-        manager.start(service);
-        break;
-      case 'stop':
-        manager.stop(service);
-        break;
-      case 'restart':
-        manager.restart(service);
-        break;
-      case 'status':
-        manager.status();
-        break;
-      case 'logs':
-        manager.logs(service);
-        break;
-      case 'remove':
-        manager.remove(service);
-        break;
-      default:
-        console.log('Unknown command. Available: start, stop, restart, status, logs, remove');
+  try {
+    const manager = new DockerComposeManager();
+
+    console.log('Docker Compose Manager - JavaScript Edition');
+    console.log(`Config loaded from: ${manager.configPath}`);
+    console.log(`Current environment: ${manager.environment}`);
+
+    const args = process.argv.slice(2);
+
+    if (args.length > 0) {
+      const command = args[0].toLowerCase();
+
+      try {
+        switch (command) {
+          case 'env':
+            if (args.length > 1) {
+              manager.switchEnvironment(args[1]);
+            } else {
+              console.log('Available environments:', manager.getAvailableEnvironments());
+            }
+            break;
+
+          case 'start':
+            manager.start(args[1] || null);
+            break;
+
+          case 'stop':
+            manager.stop(args[1] || null);
+            break;
+
+          case 'restart':
+            manager.restart(args[1] || null);
+            break;
+
+          case 'status':
+            manager.status();
+            break;
+
+          case 'logs':
+            manager.logs(args[1] || null);
+            break;
+
+          case 'remove':
+            manager.remove(args[1] || null);
+            break;
+
+          case 'build':
+            manager.build(args[1] || null);
+            break;
+
+          case 'pull':
+            manager.pull(args[1] || null);
+            break;
+
+          case 'monitor':
+            const duration = args[1] ? parseInt(args[1]) : null;
+            manager.monitorServices(duration);
+            break;
+
+          case 'health':
+            if (args[1]) {
+              const health = manager.checkServiceHealth(args[1]);
+              console.log(JSON.stringify(health, null, 2));
+            } else {
+              console.log('Usage: node index.js health <service_name>');
+            }
+            break;
+
+          case 'deploy':
+            manager.deploy(args[1] || null);
+            break;
+
+          case 'backup':
+            manager.createBackup(args[1] || null);
+            break;
+
+          case 'rollback':
+            if (args[1]) {
+              manager.rollback(args[1]);
+            } else {
+              console.log('Usage: node index.js rollback <backup_path>');
+            }
+            break;
+
+          case 'config':
+            manager.showConfig();
+            break;
+
+          default:
+            console.log('Unknown command. Available: start, stop, restart, status, logs, remove, build, pull, env, monitor, health, deploy, backup, rollback, config');
+            console.log('Usage: node index.js <command> [service|environment|backup_path]');
+        }
+      } catch (error) {
+        if (error instanceof EnvironmentError) {
+          console.log(`Error: ${error.message}`);
+        } else {
+          console.log(`Error: ${error.message}`);
+        }
+      }
+    } else {
+      // Interactive mode
+      const readline = require('readline');
+      const rl = readline.createInterface({
+        input: process.stdin,
+        output: process.stdout
+      });
+
+      function showMenu() {
+        manager.displayMenu();
+        rl.question('Enter your choice: ', (choice) => {
+          try {
+            switch (choice.trim()) {
+              case '1':
+                manager.start();
+                showMenu();
+                break;
+              case '2':
+                manager.stop();
+                showMenu();
+                break;
+              case '3':
+                manager.restart();
+                showMenu();
+                break;
+              case '4':
+                manager.status();
+                showMenu();
+                break;
+              case '5':
+                manager.logs();
+                showMenu();
+                break;
+              case '6':
+                manager.remove();
+                showMenu();
+                break;
+              case '7':
+                manager.build();
+                showMenu();
+                break;
+              case '8':
+                manager.pull();
+                showMenu();
+                break;
+              case '9':
+                console.log('Available environments:', manager.getAvailableEnvironments());
+                rl.question('Enter environment name: ', (env) => {
+                  try {
+                    manager.switchEnvironment(env.trim());
+                  } catch (error) {
+                    console.log(`Error: ${error.message}`);
+                  }
+                  showMenu();
+                });
+                break;
+              case '10':
+                rl.question('Enter monitoring duration in seconds (leave empty for continuous): ', (input) => {
+                  const duration = input.trim() ? parseInt(input.trim()) : null;
+                  manager.monitorServices(duration);
+                  // Note: monitorServices will handle the continuous monitoring
+                  // and exit when done or interrupted
+                  setTimeout(() => showMenu(), 1000);
+                });
+                break;
+              case '11':
+                rl.question('Enter service name to check health: ', (service) => {
+                  if (service.trim()) {
+                    const health = manager.checkServiceHealth(service.trim());
+                    console.log(JSON.stringify(health, null, 2));
+                  } else {
+                    console.log('Service name is required');
+                  }
+                  showMenu();
+                });
+                break;
+              case '12':
+                rl.question('Enter deployment strategy (recreate/rolling/blue-green) [recreate]: ', (input) => {
+                  const strategy = input.trim() || 'recreate';
+                  manager.deploy(strategy);
+                  showMenu();
+                });
+                break;
+              case '13':
+                rl.question('Enter backup name (optional): ', (input) => {
+                  const backupName = input.trim() || null;
+                  manager.createBackup(backupName);
+                  showMenu();
+                });
+                break;
+              case '14':
+                rl.question('Enter backup path to rollback to: ', (input) => {
+                  const backupPath = input.trim();
+                  if (backupPath) {
+                    manager.rollback(backupPath);
+                  } else {
+                    console.log('Backup path is required');
+                  }
+                  showMenu();
+                });
+                break;
+              case '15':
+                manager.showConfig();
+                showMenu();
+                break;
+              case '0':
+                console.log('Goodbye!');
+                rl.close();
+                break;
+              default:
+                console.log('Invalid choice. Please try again.');
+                showMenu();
+            }
+          } catch (error) {
+            console.log(`Error: ${error.message}`);
+            showMenu();
+          }
+        });
+      }
+
+      showMenu();
     }
-  } else {
-    manager.displayMenu();
-    console.log('Usage: node index.js <command> [service]');
-    console.log('Example: node index.js start web');
+  } catch (error) {
+    if (error instanceof DockerComposeError) {
+      console.error(`Error: ${error.message}`);
+      process.exit(1);
+    } else {
+      console.error(`Unexpected error: ${error.message}`);
+      process.exit(1);
+    }
   }
 }
 
-if (require.main === module) {
-  main();
-}
+// Run the main function
+main();
 
 module.exports = DockerComposeManager;
