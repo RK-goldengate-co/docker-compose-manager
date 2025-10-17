@@ -2,178 +2,247 @@
 
 /**
  * Docker Compose Manager - TypeScript Implementation
- * A strongly-typed tool to manage Docker Compose services
+ * Main entry point using modular architecture.
  */
 
-import { execSync } from 'child_process';
-import * as fs from 'fs';
-import * as yaml from 'js-yaml';
-
-interface Config {
-  services?: string[];
-  compose_file?: string;
-}
-
-class DockerComposeManager {
-  private configPath: string;
-  private config: Config;
-
-  constructor(configPath: string = 'dcm.config.yml') {
-    this.configPath = configPath;
-    this.config = this.loadConfig();
-  }
-
-  private loadConfig(): Config {
-    try {
-      if (fs.existsSync(this.configPath)) {
-        const fileContents = fs.readFileSync(this.configPath, 'utf8');
-        return yaml.load(fileContents) as Config;
-      }
-    } catch (e) {
-      console.log('Config file not found, using defaults');
-    }
-    return { services: [], compose_file: 'docker-compose.yml' };
-  }
-
-  private executeCommand(command: string): string | null {
-    try {
-      console.log(`Executing: ${command}`);
-      const output = execSync(command, { encoding: 'utf8' });
-      console.log(output);
-      return output;
-    } catch (error: any) {
-      console.error(`Error: ${error.message}`);
-      return null;
-    }
-  }
-
-  public start(serviceName?: string): string | null {
-    const cmd = serviceName 
-      ? `docker-compose up -d ${serviceName}`
-      : 'docker-compose up -d';
-    console.log('Starting services...');
-    return this.executeCommand(cmd);
-  }
-
-  public stop(serviceName?: string): string | null {
-    const cmd = serviceName 
-      ? `docker-compose stop ${serviceName}`
-      : 'docker-compose stop';
-    console.log('Stopping services...');
-    return this.executeCommand(cmd);
-  }
-
-  public restart(serviceName?: string): string | null {
-    const cmd = serviceName 
-      ? `docker-compose restart ${serviceName}`
-      : 'docker-compose restart';
-    console.log('Restarting services...');
-    return this.executeCommand(cmd);
-  }
-
-  public status(): string | null {
-    console.log('Checking service status...');
-    return this.executeCommand('docker-compose ps');
-  }
-
-  public logs(serviceName?: string, follow: boolean = false): string | null {
-    const followFlag = follow ? '-f' : '';
-    const cmd = serviceName 
-      ? `docker-compose logs ${followFlag} ${serviceName}`
-      : `docker-compose logs ${followFlag}`;
-    console.log('Fetching logs...');
-    return this.executeCommand(cmd);
-  }
-
-  public remove(serviceName?: string): string | null {
-    const cmd = serviceName 
-      ? `docker-compose rm -f ${serviceName}`
-      : 'docker-compose rm -f';
-    console.log('Removing services...');
-    return this.executeCommand(cmd);
-  }
-
-  public build(serviceName?: string): string | null {
-    const cmd = serviceName 
-      ? `docker-compose build ${serviceName}`
-      : 'docker-compose build';
-    console.log('Building services...');
-    return this.executeCommand(cmd);
-  }
-
-  public pull(serviceName?: string): string | null {
-    const cmd = serviceName 
-      ? `docker-compose pull ${serviceName}`
-      : 'docker-compose pull';
-    console.log('Pulling images...');
-    return this.executeCommand(cmd);
-  }
-
-  public displayMenu(): void {
-    console.log('\n=== Docker Compose Manager (TypeScript) ===');
-    console.log('1. Start services');
-    console.log('2. Stop services');
-    console.log('3. Restart services');
-    console.log('4. Check status');
-    console.log('5. View logs');
-    console.log('6. Remove services');
-    console.log('7. Build services');
-    console.log('8. Pull images');
-    console.log('0. Exit');
-    console.log('===========================================\n');
-  }
-}
+import { DockerComposeManager } from './implementations/typescript/manager';
+import {
+  DockerComposeError,
+  EnvironmentError
+} from './implementations/typescript/exceptions';
 
 function main(): void {
-  const manager = new DockerComposeManager();
-  
-  console.log('Docker Compose Manager - TypeScript Edition');
-  console.log('Config loaded from:', manager['configPath']);
-  
-  // Check for command line arguments
-  const args = process.argv.slice(2);
-  
-  if (args.length > 0) {
-    const command = args[0];
-    const service = args[1] || undefined;
-    
-    switch(command) {
-      case 'start':
-        manager.start(service);
-        break;
-      case 'stop':
-        manager.stop(service);
-        break;
-      case 'restart':
-        manager.restart(service);
-        break;
-      case 'status':
-        manager.status();
-        break;
-      case 'logs':
-        manager.logs(service);
-        break;
-      case 'remove':
-        manager.remove(service);
-        break;
-      case 'build':
-        manager.build(service);
-        break;
-      case 'pull':
-        manager.pull(service);
-        break;
-      default:
-        console.log('Unknown command. Available: start, stop, restart, status, logs, remove, build, pull');
+  try {
+    const manager = new DockerComposeManager();
+
+    console.log('Docker Compose Manager - TypeScript Edition');
+    console.log(`Config loaded from: ${manager.configPath}`);
+    console.log(`Current environment: ${manager.environment}`);
+
+    const args = process.argv.slice(2);
+
+    if (args.length > 0) {
+      const command = args[0].toLowerCase();
+
+      try {
+        switch (command) {
+          case 'env':
+            if (args.length > 1) {
+              manager.switchEnvironment(args[1]);
+            } else {
+              console.log('Available environments:', manager.getAvailableEnvironments());
+            }
+            break;
+
+          case 'start':
+            manager.start(args[1] || null);
+            break;
+
+          case 'stop':
+            manager.stop(args[1] || null);
+            break;
+
+          case 'restart':
+            manager.restart(args[1] || null);
+            break;
+
+          case 'status':
+            manager.status();
+            break;
+
+          case 'logs':
+            manager.logs(args[1] || null);
+            break;
+
+          case 'remove':
+            manager.remove(args[1] || null);
+            break;
+
+          case 'build':
+            manager.build(args[1] || null);
+            break;
+
+          case 'pull':
+            manager.pull(args[1] || null);
+            break;
+
+          case 'monitor':
+            const duration = args[1] ? parseInt(args[1]) : null;
+            manager.monitorServices(duration);
+            break;
+
+          case 'health':
+            if (args[1]) {
+              const health = manager.checkServiceHealth(args[1]);
+              console.log(JSON.stringify(health, null, 2));
+            } else {
+              console.log('Usage: ts-node index.ts health <service_name>');
+            }
+            break;
+
+          case 'deploy':
+            manager.deploy(args[1] || null);
+            break;
+
+          case 'backup':
+            manager.createBackup(args[1] || null);
+            break;
+
+          case 'rollback':
+            if (args[1]) {
+              manager.rollback(args[1]);
+            } else {
+              console.log('Usage: ts-node index.ts rollback <backup_path>');
+            }
+            break;
+
+          case 'config':
+            manager.showConfig();
+            break;
+
+          default:
+            console.log('Unknown command. Available: start, stop, restart, status, logs, remove, build, pull, env, monitor, health, deploy, backup, rollback, config');
+            console.log('Usage: ts-node index.ts <command> [service|environment|backup_path]');
+        }
+      } catch (error) {
+        if (error instanceof EnvironmentError) {
+          console.log(`Error: ${error.message}`);
+        } else {
+          console.log(`Error: ${error.message}`);
+        }
+      }
+    } else {
+      // Interactive mode
+      const readline = require('readline');
+      const rl = readline.createInterface({
+        input: process.stdin,
+        output: process.stdout
+      });
+
+      function showMenu(): void {
+        manager.displayMenu();
+        rl.question('Enter your choice: ', (choice: string) => {
+          try {
+            switch (choice.trim()) {
+              case '1':
+                manager.start();
+                showMenu();
+                break;
+              case '2':
+                manager.stop();
+                showMenu();
+                break;
+              case '3':
+                manager.restart();
+                showMenu();
+                break;
+              case '4':
+                manager.status();
+                showMenu();
+                break;
+              case '5':
+                manager.logs();
+                showMenu();
+                break;
+              case '6':
+                manager.remove();
+                showMenu();
+                break;
+              case '7':
+                manager.build();
+                showMenu();
+                break;
+              case '8':
+                manager.pull();
+                showMenu();
+                break;
+              case '9':
+                console.log('Available environments:', manager.getAvailableEnvironments());
+                rl.question('Enter environment name: ', (env: string) => {
+                  try {
+                    manager.switchEnvironment(env.trim());
+                  } catch (error) {
+                    console.log(`Error: ${error.message}`);
+                  }
+                  showMenu();
+                });
+                break;
+              case '10':
+                rl.question('Enter monitoring duration in seconds (leave empty for continuous): ', (input: string) => {
+                  const duration = input.trim() ? parseInt(input.trim()) : null;
+                  manager.monitorServices(duration);
+                  // Note: monitorServices will handle the continuous monitoring
+                  setTimeout(() => showMenu(), 1000);
+                });
+                break;
+              case '11':
+                rl.question('Enter service name to check health: ', (service: string) => {
+                  if (service.trim()) {
+                    const health = manager.checkServiceHealth(service.trim());
+                    console.log(JSON.stringify(health, null, 2));
+                  } else {
+                    console.log('Service name is required');
+                  }
+                  showMenu();
+                });
+                break;
+              case '12':
+                rl.question('Enter deployment strategy (recreate/rolling/blue-green) [recreate]: ', (input: string) => {
+                  const strategy = input.trim() || 'recreate';
+                  manager.deploy(strategy);
+                  showMenu();
+                });
+                break;
+              case '13':
+                rl.question('Enter backup name (optional): ', (input: string) => {
+                  const backupName = input.trim() || null;
+                  manager.createBackup(backupName);
+                  showMenu();
+                });
+                break;
+              case '14':
+                rl.question('Enter backup path to rollback to: ', (input: string) => {
+                  const backupPath = input.trim();
+                  if (backupPath) {
+                    manager.rollback(backupPath);
+                  } else {
+                    console.log('Backup path is required');
+                  }
+                  showMenu();
+                });
+                break;
+              case '15':
+                manager.showConfig();
+                showMenu();
+                break;
+              case '0':
+                console.log('Goodbye!');
+                rl.close();
+                break;
+              default:
+                console.log('Invalid choice. Please try again.');
+                showMenu();
+            }
+          } catch (error) {
+            console.log(`Error: ${error.message}`);
+            showMenu();
+          }
+        });
+      }
+
+      showMenu();
     }
-  } else {
-    manager.displayMenu();
-    console.log('Usage: ts-node index.ts <command> [service]');
-    console.log('Example: ts-node index.ts start web');
+  } catch (error) {
+    if (error instanceof DockerComposeError) {
+      console.error(`Error: ${error.message}`);
+      process.exit(1);
+    } else {
+      console.error(`Unexpected error: ${error.message}`);
+      process.exit(1);
+    }
   }
 }
 
-if (require.main === module) {
-  main();
-}
-
+// Run the main function
+main();
 export default DockerComposeManager;

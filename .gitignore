@@ -60,6 +60,24 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 
-# OS
-Thumbs.db
-.DS_Store
+# Project specific
+backups/
+*.backup
+*.bak
+
+# Node.js (additional)
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# TypeScript
+*.tsbuildinfo
+
+# Docker Compose Manager specific
+dcm.log
+*.pid
+
+# Temporary files
+*.tmp
+*.temp

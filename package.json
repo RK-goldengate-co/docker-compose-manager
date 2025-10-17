@@ -1,0 +1,37 @@
+{
+  "name": "docker-compose-manager",
+  "version": "1.0.0",
+  "description": "A powerful multi-language Docker Compose manager with deployment and monitoring capabilities",
+  "main": "src/main.py",
+  "scripts": {
+    "start": "python3 src/main.py",
+    "start:js": "node src/index.js",
+    "start:ts": "ts-node src/index.ts",
+    "start:go": "cd src && go run main.go",
+    "build": "echo 'No build step required'",
+    "test": "echo 'Tests will be added in future'",
+    "lint": "echo 'Linting will be added in future'"
+  },
+  "keywords": [
+    "docker",
+    "docker-compose",
+    "deployment",
+    "monitoring",
+    "devops",
+    "multi-language"
+  ],
+  "author": "Docker Compose Manager Team",
+  "license": "MIT",
+  "engines": {
+    "node": ">=14.0.0",
+    "python": ">=3.7.0"
+  },
+  "devDependencies": {
+    "@types/node": "^24.8.1",
+    "ts-node": "^10.9.0",
+    "typescript": "^5.9.3"
+  },
+  "dependencies": {
+    "js-yaml": "^4.1.0"
+  }
+}

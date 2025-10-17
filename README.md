@@ -213,14 +213,12 @@ cd src && go run main.go stop
 
 All implementations support the following commands:
 
-- `start [service]` - Start Docker Compose services (all or specific service)
-- `stop [service]` - Stop Docker Compose services (all or specific service)
-- `restart [service]` - Restart Docker Compose services (all or specific service)
-- `status` - Check the status of all services
-- `logs [service]` - View logs from services
-- `remove [service]` - Remove Docker Compose services
-- `build [service]` - Build Docker Compose services
-- `pull [service]` - Pull Docker images
+- `deploy [strategy]` - Deploy services with automated rollback on failure
+- `backup [name]` - Create backup before deployment
+- `rollback <backup_path>` - Rollback to previous deployment state
+- `monitor [duration]` - Monitor services continuously
+- `health <service>` - Check health status of specific service
+- `status-detailed` - Get detailed status in JSON format
 
 ### Examples
 
@@ -246,8 +244,23 @@ node src/index.js build
 # Pull latest images
 ts-node src/index.ts pull
 
-# Remove all services
-go run src/main.go remove
+# Deploy services with default strategy
+python3 src/main.py deploy
+
+# Deploy with specific strategy
+node src/index.js deploy rolling
+
+# Monitor services for 5 minutes
+cd src && go run main.go monitor 300
+
+# Check health of web service
+python3 src/main.py health web
+
+# Create backup before deployment
+python3 src/main.py backup pre-production
+
+# Rollback to previous deployment
+python3 src/main.py rollback ./backups/backup_20231201_120000
 ```
 
 ## ⚙️ Configuration
