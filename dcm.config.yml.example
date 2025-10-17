@@ -1,0 +1,100 @@
+# Docker Compose Manager Configuration Example
+# Copy this file to dcm.config.yml and customize for your project
+
+# Project settings
+project:
+  name: my-project
+  description: Docker Compose managed project
+  version: 1.0.0
+
+# Environment configurations
+environments:
+  # Development environment
+  dev:
+    compose_file: docker-compose.dev.yml
+    env_file: .env.dev
+    auto_restart: true
+    build_options:
+      - --pull
+      - --no-cache
+    networks:
+      - dev-network
+    
+  # Staging environment  
+  staging:
+    compose_file: docker-compose.staging.yml
+    env_file: .env.staging
+    auto_restart: true
+    build_options:
+      - --pull
+    networks:
+      - staging-network
+      
+  # Production environment
+  prod:
+    compose_file: docker-compose.prod.yml
+    env_file: .env.prod
+    auto_restart: true
+    build_options:
+      - --pull
+    networks:
+      - prod-network
+    healthcheck:
+      enabled: true
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+# Service monitoring settings
+monitoring:
+  enabled: true
+  interval: 60  # seconds
+  log_retention: 7  # days
+  alerts:
+    email:
+      enabled: false
+      recipients:
+        - admin@example.com
+    slack:
+      enabled: false
+      webhook_url: https://hooks.slack.com/services/YOUR/WEBHOOK/URL
+
+# Deployment settings
+deployment:
+  strategy: rolling  # rolling, blue-green, recreate
+  max_surge: 1
+  max_unavailable: 0
+  rollback_on_failure: true
+  pre_deploy_hooks:
+    - ./scripts/backup.sh
+    - ./scripts/pre-deploy.sh
+  post_deploy_hooks:
+    - ./scripts/health-check.sh
+    - ./scripts/notify.sh
+
+# Backup settings
+backup:
+  enabled: true
+  schedule: "0 2 * * *"  # Daily at 2 AM
+  retention: 30  # days
+  volumes:
+    - data
+    - config
+  destination: ./backups
+
+# Logging configuration
+logging:
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "3"
+  level: info  # debug, info, warning, error
+
+# Resource limits (optional)
+resources:
+  default:
+    memory: 512m
+    cpus: "0.5"
+  limits:
+    memory: 1g
+    cpus: "1.0"
